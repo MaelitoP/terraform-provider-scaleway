@@ -125,7 +125,7 @@ func TestAccObjectBucket_CheckRegionIsSet(t *testing.T) {
 	defer tt.Cleanup()
 
 	bucketNamePrefix := "tf-tests-bucket-region"
-	bucketNameSuffix := sdkacctest.RandomWithPrefix("")
+	bucketNameSuffix := sdkacctest.RandomWithPrefix("tf-test")
 	objectBucketTestDefaultRegion, _ := tt.Meta.ScwClient().GetDefaultRegion()
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -435,6 +435,24 @@ func TestAccObjectBucket_Lifecycle(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceNameLifecycle, "lifecycle_rule.0.expiration.0.days", "2"),
 					resource.TestCheckResourceAttr(resourceNameLifecycle, "lifecycle_rule.1.abort_incomplete_multipart_upload_days", "30"),
 				),
+			},
+			{
+				Config: fmt.Sprintf(`
+						resource "scaleway_object_bucket" "main-bucket-lifecycle" {
+							name           		= "%s"
+							region 				= "%s"
+							object_lock_enabled = true
+
+							lifecycle_rule {
+								enabled = true
+								prefix  = ""
+								expiration {
+									days = 2
+									expired_object_delete_marker = false
+								}
+							}
+						}`, bucketLifecycle, objectTestsMainRegion),
+				ExpectError: regexp.MustCompile("lifecycle_rule.0.expiration: 'days', 'date', 'expired_object_delete_marker' are mutually exclusive"),
 			},
 			{
 				Config: fmt.Sprintf(`
